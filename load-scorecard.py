@@ -1,8 +1,28 @@
 
-import csv
+import pandas as pd
 import psycopg
 import sys
 import credentials
+from tableCols import get_matching_cols, tableColumns
+
+
+def connect_to_database():
+    """
+    Connect to the PostgreSQL database.
+
+    Returns:
+        A tuple containing the connection and cursor objects.
+    """
+    conn = psycopg.connect(
+        host="pinniped.postgres.database.azure.com",
+        dbname="shauck",
+        user=credentials.DB_USER,
+        password=credentials.DB_PASSWORD
+    )
+
+    cur = conn.cursor()
+
+    return conn, cur
 
 
 def load_scorecard_data(filename):
@@ -15,26 +35,24 @@ def load_scorecard_data(filename):
     Returns:
         None
     """
-    # Open the CSV file and read its contents into a list of rows
-    with open(filename, 'r') as f:
-        reader = csv.reader(f)
-        next(reader) # skip header row
-        rows = [row for row in reader]
 
-    # Connect to the PostgreSQL database
-    conn = psycopg.connect(
-        host = "pinniped.postgres.database.azure.com",
-        dbname = "shauck",
-        user = credentials.DB_USER,
-        password = credentials.DB_PASSWORD
-    )
-    cur = conn.cursor()
+    # Connect to the database
+    conn, cur = connect_to_database()
+
+    # Read the CSV file into a pandas DataFrame
+    collegeScorecard = pd.read_csv(filename)
 
     inserted_rows = []
     rejected_rows = []
 
-    # Iterate over each row in the list and insert it into the database
-    for row in rows:
+    IIcols = pd.read_csv('IIcols.csv', encoding='latin1')
+    IImatchingcols = get_matching_cols(collegeScorecard, IIcols)
+
+    IIcollegeScorecard = collegeScorecard[IImatchingcols]
+    IIcollegeScorecard = IIcollegeScorecard[IIcols.columns.tolist()]
+
+    # Iterate over each row in the DataFrame and insert it into the database
+    for index, row in IIcollegeScorecard.iterrows():
         # do any necessary processing on the row
         # e.g. convert -999 to None or NULL, parse dates into Python date objects, etc.
         # ...
@@ -45,23 +63,26 @@ def load_scorecard_data(filename):
             VALUES (%s, %s, %s, ...);
         """
         try:
-            cur.execute(insert_statement, row)
+            cur.execute(insert_statement, tuple(row))
             inserted_rows.append(row)
         except psycopg.Error as e:
             conn.rollback()
             rejected_rows.append(row)
             print(f"Error inserting row {row}: {e}")
+            insert_statement = f"""
+                INSERT INTO scorecard_table ({", ".join(IIcollegeScorecard.columns)})
+                VALUES ({", ".join(["%s"] * len(IIcollegeScorecard.columns))});
+            """
 
     # Commit the changes to the database
     conn.commit()
 
     # Print a summary of the results
-    print(f"Read {len(rows)} rows from {filename}")
+    print(f"Read {len(collegeScorecard)} rows from {filename}")
     print(f"Inserted {len(inserted_rows)} rows into the database")
     if rejected_rows:
-        with open('rejected_rows.csv', 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerows(rejected_rows)
+        collegeScorecard_rejected = pd.DataFrame(rejected_rows, columns=collegeScorecard.columns)
+        collegeScorecard_rejected.to_csv('rejected_rows.csv', index=False)
         print(f"{len(rejected_rows)} rows were rejected and written to rejected_rows.csv")
 
     # Close the database connection
@@ -69,6 +90,6 @@ def load_scorecard_data(filename):
     conn.close()
 
 
-if __name__ == '__main__':
+#if __name__ == '__main__':
     filename = sys.argv[1]
     load_scorecard_data(filename)

@@ -4,6 +4,7 @@ import numpy as np
 import psycopg
 import sys
 import credentials
+import csv
 
 
 def connect_to_database():
@@ -32,10 +33,10 @@ def clean_csv(csv_file_path):
                                              1911: 'object',
                                              1912: 'object',
                                              1913: 'object',
-                                             2376: 'object', # should be float64
-                                             2377: 'object', # should be float64
-                                             2958: 'object'}) # should be int64
-    
+                                             2376: 'object',  # should be float64
+                                             2377: 'object',  # should be float64
+                                             2958: 'object'})  # should be int64
+
     # Extract year from csv_file_path
     year1 = csv_file_path.split('_')[0].replace('MERGED', '')
     year2 = str(int(year1) + 1)
@@ -62,13 +63,13 @@ def split_dataframe(df):
     num_cols = df.shape[1]
 
     # Calculate the number of columns to keep in each dataframe
-    num_cols_per_df = int(np.ceil((num_cols - 1) / 3))
+    num_cols_per_df = int(np.ceil((num_cols - 1) / 10))
 
     # Create a list of dataframes
     dfs = []
 
     # Split the dataframe into three dataframes
-    for i in range(3):
+    for i in range(10):
         start_col = i * num_cols_per_df
         end_col = min((i + 1) * num_cols_per_df, num_cols - 1)
         if i > 0:
@@ -131,6 +132,11 @@ def create_tables(df):
             else:
                 columns.append(f'{col} VARCHAR(255)')
         columns_str = ', '.join(columns)
+
+        # Drop the table if it exists
+        cur.execute(f"DROP TABLE IF EXISTS scorecard_{i}")
+
+        # Create the table
         cur.execute(f'CREATE TABLE scorecard_{i} ({columns_str})')
 
     # Commit changes and close the connection
@@ -138,7 +144,59 @@ def create_tables(df):
     conn.close()
 
 
-create_tables('MERGED2018_19_PP.csv')
+def insert_rows(df):
+    df = df.iloc[:20]
+
+    # Connect to the database
+    conn, cur = connect_to_database()
+
+    # Initialize counters
+    total_rows = 0
+    inserted_rows = 0
+    rejected_rows = 0
+
+    # Initialize the CSV writer for rejected rows
+    rejected_csv = csv.writer(open('rejected_rows.csv', 'w'))
+    rejected_csv.writerow(['error_message', 'row'])
+
+    # Split the dataframe into three dataframes
+    dfs = split_dataframe(df)
+
+    for i, df in enumerate(dfs):
+
+        # Create a list of placeholders for the SQL query
+        placeholders = ','.join(['%s'] * len(df.columns))
+
+        # Create a list of tuples containing the values for each row
+        values = [tuple(x) for x in df.values]
+        
+
+        # Insert the rows into the database
+        try:
+            cur.executemany(f'INSERT INTO scorecard_{i} VALUES ({placeholders})', values)
+            inserted_rows += len(values)
+        except psycopg.Error as e:
+            # If the row is invalid, print an error message and write it to the rejected CSV file
+            print(f'Error inserting rows into scorecard_{i}: {e}')
+            for index, row in enumerate(values):
+                print(f'Error inserting row {index}: {e}')
+                rejected_csv.writerow([str(e), row])
+            rejected_rows += len(values)
+   
+    # Commit changes and close the connection
+    conn.commit()
+    conn.close()
+
+    # Print a summary of the results
+    print(f'Total rows: {total_rows}')
+    print(f'Inserted rows: {inserted_rows}')
+    print(f'Rejected rows: {rejected_rows}')
+
+
+cleaned = clean_csv('MERGED2018_19_PP.csv')
+create_tables(cleaned)
+
+insert_rows(cleaned)
 
 
 #if __name__ == '__main__':

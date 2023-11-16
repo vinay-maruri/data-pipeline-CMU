@@ -140,7 +140,7 @@ def create_tables(df, year):
         # cur.execute(f"DROP TABLE IF EXISTS scorecard_{i}")
 
         # Create the table
-        cur.execute(f'CREATE TABLE scorecard_{yr}_{i} ({columns_str})')
+        cur.execute(f'CREATE TABLE scorecard_{yr}_{i} ({columns_str} PRIMARY KEY (UNITID))')
 
     # Commit changes and close the connection
     conn.commit()
@@ -168,6 +168,11 @@ def insert_rows(df, year):
     # Split the dataframe into three dataframes
     dfs = split_dataframe(df)
     for i in range(len(dfs)):
+        # split the dataframe into accepted data and rejected data
+
+        # write accepted data to database
+        # write rejected rows to csv
+        #print the summary
         dfs[i].to_sql(f'scorecard_{year}_{i}', con=conn, if_exists="replace", index = False)
     
     """for i, df in enumerate(dfs):

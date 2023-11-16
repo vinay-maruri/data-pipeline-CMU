@@ -2,9 +2,11 @@
 import pandas as pd
 import numpy as np
 import psycopg
+import psycopg2
 import sys
 import credentials
 import csv
+from sqlalchemy import create_engine
 
 
 def connect_to_database():
@@ -16,7 +18,7 @@ def connect_to_database():
     """
     conn = psycopg.connect(
         host="pinniped.postgres.database.azure.com",
-        dbname="shauck",
+        dbname="vmaruri",
         user=credentials.DB_USER,
         password=credentials.DB_PASSWORD
     )
@@ -27,15 +29,7 @@ def connect_to_database():
 
 
 def clean_csv(csv_file_path):
-    file = pd.read_csv(csv_file_path, dtype={1729: 'object',
-                                             1909: 'object',
-                                             1910: 'object',
-                                             1911: 'object',
-                                             1912: 'object',
-                                             1913: 'object',
-                                             2376: 'object',  # should be float64
-                                             2377: 'object',  # should be float64
-                                             2958: 'object'})  # should be int64
+    file = pd.read_csv(csv_file_path, low_memory=False)
 
     # Extract year from csv_file_path
     year1 = csv_file_path.split('_')[0].replace('MERGED', '')
@@ -55,6 +49,16 @@ def clean_csv(csv_file_path):
     file[object_cols] = file[object_cols].replace('[^0-9a-zA-Z]+', '',
                                                   regex=True)
 
+    # replace privacy suppressed values with NaN in numeric columns
+    numeric_cols = file.select_dtypes(include=['int64', 'float64']).columns
+    file[numeric_cols] = file[numeric_cols].replace('PrivacySuppressed', np.nan,
+                                                    regex=True)
+
+    # replace privacy suppressed values with NaN in object columns
+    numeric_cols = file.select_dtypes(include=['object']).columns
+    file[numeric_cols] = file[numeric_cols].replace('PrivacySuppressed', 'Null',
+                                                    regex=True)
+    
     return file
 
 
@@ -103,7 +107,7 @@ def get_column_types(df):
     return int_cols, float_cols, object_cols
 
 
-def create_tables(df):
+def create_tables(df, year):
     """
     Create a table in the PostgreSQL database for all columns in each dataframe.
 
@@ -118,7 +122,7 @@ def create_tables(df):
 
     # Split the dataframe into three dataframes
     dfs = split_dataframe(df)
-
+    yr = year
     # Create a table for each dataframe with all columns for the dataframe
     for i, df in enumerate(dfs):
         columns = []
@@ -132,28 +136,30 @@ def create_tables(df):
             else:
                 columns.append(f'{col} VARCHAR(255)')
         columns_str = ', '.join(columns)
-
         # Drop the table if it exists
-        cur.execute(f"DROP TABLE IF EXISTS scorecard_{i}")
+        # cur.execute(f"DROP TABLE IF EXISTS scorecard_{i}")
 
         # Create the table
-        cur.execute(f'CREATE TABLE scorecard_{i} ({columns_str})')
+        cur.execute(f'CREATE TABLE scorecard_{yr}_{i} ({columns_str})')
 
     # Commit changes and close the connection
     conn.commit()
     conn.close()
 
 
-def insert_rows(df):
+def insert_rows(df, year):
     df = df.iloc[:5]
 
     # Connect to the database
-    conn, cur = connect_to_database()
+    #conn, cur = connect_to_database()
 
+    conn_string = f'postgresql://{credentials.DB_USER}:{credentials.DB_PASSWORD}@pinniped.postgres.database.azure.com/vmaruri'
+    db = create_engine(conn_string)
+    conn = db.connect()
     # Initialize counters
-    total_rows = 0
-    inserted_rows = 0
-    rejected_rows = 0
+    # total_rows = 0
+    # inserted_rows = 0
+    # rejected_rows = 0
 
     # Initialize the CSV writer for rejected rows
     rejected_csv = csv.writer(open('rejected_rows.csv', 'w'))
@@ -161,8 +167,10 @@ def insert_rows(df):
 
     # Split the dataframe into three dataframes
     dfs = split_dataframe(df)
-
-    for i, df in enumerate(dfs):
+    for i in range(len(dfs)):
+        dfs[i].to_sql(f'scorecard_{year}_{i}', con=conn, if_exists="replace", index = False)
+    
+    """for i, df in enumerate(dfs):
         cols = ",".join([str(i) for i in df.columns.tolist()])
 
         # Create a list of tuples containing the values for each row
@@ -172,28 +180,35 @@ def insert_rows(df):
         for row in values:
             try:
                 cur.execute(f'INSERT INTO scorecard_{i} ({cols}) VALUES ({", ".join(["%s"] * len(row))})', row)
-                print(f'INSERT INTO scorecard_{i} ({cols}) VALUES ({", ".join(["%s"] * len(row))})', row)
+                conn.commit()
+                #print(f'INSERT INTO scorecard_{i} ({cols}) VALUES ({", ".join(["%s"] * len(row))})', row)
                 inserted_rows += 1
             except psycopg.Error as e:
                 # If the row is invalid, print an error message and write it to the rejected CSV file
                 print(f'Error inserting row into scorecard_{i}: {e}')
                 rejected_csv.writerow([str(e), row])
-                rejected_rows += 1
+                rejected_rows += 1"""
 
     # Commit changes and close the connection
-    conn.commit()
+    #conn.commit()
     conn.close()
 
     # Print a summary of the results
-    print(f'Total rows: {total_rows}')
-    print(f'Inserted rows: {inserted_rows}')
-    print(f'Rejected rows: {rejected_rows}')
+    #print(f'Total rows: {total_rows}')
+    #print(f'Inserted rows: {inserted_rows}')
+    #print(f'Rejected rows: {rejected_rows}')
 
 
-cleaned = clean_csv('MERGED2018_19_PP.csv')
-create_tables(cleaned)
+# set this flag.
+new_tables = True
 
-insert_rows(cleaned)
+filename = sys.argv[1]
+year = filename.split('_')[0].replace('MERGED', '')
+print(year)
+cleaned = clean_csv(filename)
+if new_tables:
+    create_tables(cleaned, year)
+insert_rows(cleaned, year)
 
 
 #if __name__ == '__main__':

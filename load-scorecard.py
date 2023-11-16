@@ -145,7 +145,7 @@ def create_tables(df):
 
 
 def insert_rows(df):
-    df = df.iloc[:20]
+    df = df.iloc[:5]
 
     # Connect to the database
     conn, cur = connect_to_database()
@@ -163,26 +163,23 @@ def insert_rows(df):
     dfs = split_dataframe(df)
 
     for i, df in enumerate(dfs):
-
-        # Create a list of placeholders for the SQL query
-        placeholders = ','.join(['%s'] * len(df.columns))
+        cols = ",".join([str(i) for i in df.columns.tolist()])
 
         # Create a list of tuples containing the values for each row
         values = [tuple(x) for x in df.values]
-        
 
         # Insert the rows into the database
-        try:
-            cur.executemany(f'INSERT INTO scorecard_{i} VALUES ({placeholders})', values)
-            inserted_rows += len(values)
-        except psycopg.Error as e:
-            # If the row is invalid, print an error message and write it to the rejected CSV file
-            print(f'Error inserting rows into scorecard_{i}: {e}')
-            for index, row in enumerate(values):
-                print(f'Error inserting row {index}: {e}')
+        for row in values:
+            try:
+                cur.execute(f'INSERT INTO scorecard_{i} ({cols}) VALUES ({", ".join(["%s"] * len(row))})', row)
+                print(f'INSERT INTO scorecard_{i} ({cols}) VALUES ({", ".join(["%s"] * len(row))})', row)
+                inserted_rows += 1
+            except psycopg.Error as e:
+                # If the row is invalid, print an error message and write it to the rejected CSV file
+                print(f'Error inserting row into scorecard_{i}: {e}')
                 rejected_csv.writerow([str(e), row])
-            rejected_rows += len(values)
-   
+                rejected_rows += 1
+
     # Commit changes and close the connection
     conn.commit()
     conn.close()

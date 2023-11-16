@@ -2,7 +2,6 @@
 import pandas as pd
 import numpy as np
 import psycopg
-import psycopg2
 import sys
 import credentials
 import csv
@@ -18,7 +17,7 @@ def connect_to_database():
     """
     conn = psycopg.connect(
         host="pinniped.postgres.database.azure.com",
-        dbname="vmaruri",
+        dbname="shauck",
         user=credentials.DB_USER,
         password=credentials.DB_PASSWORD
     )
@@ -140,7 +139,7 @@ def create_tables(df, year):
         # cur.execute(f"DROP TABLE IF EXISTS scorecard_{i}")
 
         # Create the table
-        cur.execute(f'CREATE TABLE scorecard_{yr}_{i} ({columns_str} PRIMARY KEY (UNITID))')
+        cur.execute(f'CREATE TABLE scorecard_{yr}_{i} ({columns_str} , PRIMARY KEY (UNITID))')
 
     # Commit changes and close the connection
     conn.commit()
@@ -148,12 +147,12 @@ def create_tables(df, year):
 
 
 def insert_rows(df, year):
-    df = df.iloc[:5]
+    df = df.iloc[:50]
 
     # Connect to the database
     #conn, cur = connect_to_database()
 
-    conn_string = f'postgresql://{credentials.DB_USER}:{credentials.DB_PASSWORD}@pinniped.postgres.database.azure.com/vmaruri'
+    conn_string = f'postgresql://{credentials.DB_USER}:{credentials.DB_PASSWORD}@pinniped.postgres.database.azure.com/shauck'
     db = create_engine(conn_string)
     conn = db.connect()
     # Initialize counters
@@ -162,18 +161,45 @@ def insert_rows(df, year):
     # rejected_rows = 0
 
     # Initialize the CSV writer for rejected rows
-    rejected_csv = csv.writer(open('rejected_rows.csv', 'w'))
-    rejected_csv.writerow(['error_message', 'row'])
+    #rejected_csv = csv.writer(open('rejected_rows.csv', 'w'))
+    #rejected_csv.writerow(['error_message', 'row'])
 
     # Split the dataframe into three dataframes
     dfs = split_dataframe(df)
     for i in range(len(dfs)):
-        # split the dataframe into accepted data and rejected data
+        df_all = dfs[i]
 
-        # write accepted data to database
-        # write rejected rows to csv
-        #print the summary
-        dfs[i].to_sql(f'scorecard_{year}_{i}', con=conn, if_exists="replace", index = False)
+        # Identify rows with different data types than the first row
+        #weird = (df_all.applymap(type) != df.iloc[0].apply(type)).any(axis=1)
+        # Exclude missing values from being considered as weird
+        #weird &= ~(df_all.isnull() & df.iloc[0].notnull()).any(axis=1)
+        #df_rejected = df_all[weird]
+
+        #df_accepted = df_all[~weird]
+
+        # Write the accepted rows to a PostgreSQL table
+       # df_accepted.to_sql(f'scorecard_{year}_{i}', con=conn, if_exists="replace", index = False)
+
+        # Write the rejected rows to a CSV file
+        #df_rejected.to_csv(f'rejected_rows_{year}_{i}.csv', index=False)
+
+        # Identify and drop rows with different data types
+        rows_to_drop = pd.DataFrame()
+
+        for column_name in df_all.columns:
+            rows_to_drop = pd.concat([rows_to_drop, df_all[df_all[column_name].apply(lambda x: type(x) is not df_all[column_name].dtype)]], ignore_index=True)
+
+        
+        # Write the rows to drop to a CSV file
+        rows_to_drop.to_csv(f'rejected_rows_{year}_{i}.csv', index=False)
+
+        # Drop rows with different data types from the original DataFrame
+        df_cleaned = df_all[~df_all['UNITID'].isin(rows_to_drop['UNITID'])]
+
+
+        df_cleaned.to_sql(f'scorecard_{year}_{i}', con=conn, if_exists="replace", index=False)
+
+        
     
     """for i, df in enumerate(dfs):
         cols = ",".join([str(i) for i in df.columns.tolist()])
@@ -214,8 +240,3 @@ cleaned = clean_csv(filename)
 if new_tables:
     create_tables(cleaned, year)
 insert_rows(cleaned, year)
-
-
-#if __name__ == '__main__':
-   # filename = sys.argv[1]
-   # clean_csv(filename)

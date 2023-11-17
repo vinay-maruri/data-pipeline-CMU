@@ -108,7 +108,7 @@ def select_data(years):
         scorecards.append(pd.read_sql_query(f'SELECT * from scorecard_{i};', conn))
     scorecard_df = pd.concat(scorecards)
     for y in years:
-        hds.append(pd.read_sql_query(f'SELECT * from hds_{i};', conn))
+        hds.append(pd.read_sql_query(f'SELECT * from hd_{i};', conn))
     hd_df = pd.concat(hds)
     merged_df = pd.merge(left=scorecard_df, right=hd_df, how='inner', on='UNITID')
     return merged_df

@@ -105,7 +105,7 @@ def select_data(years):
     scorecards = []
     hds = []
     for i in years:
-        scorecards.append(pd.read_sql_query(f'SELECT * from scorecard_{i};', conn))
+        scorecards.append(pd.read_sql_query(f'SELECT * from scorecard_{i-1};', conn))
     scorecard_df = pd.concat(scorecards)
     for y in years:
         hds.append(pd.read_sql_query(f'SELECT * from hd_{i};', conn))

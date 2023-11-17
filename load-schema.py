@@ -61,8 +61,7 @@ def create_tables_schema():
             TUITFTE INTEGER,
             TUITIONFEE_IN INTEGER,
             TUITIONFEE_OUT INTEGER,
-            TUITIONFEE_PROG INTEGER,
-            FOREIGN KEY (UNITID) REFERENCES InstitutionInformation(UNITID)
+            TUITIONFEE_PROG INTEGER
         );
 
         CREATE TABLE Debt (
@@ -81,8 +80,7 @@ def create_tables_schema():
             FIRSTGEN_DEBT_MDN INTEGER,
             NOTFIRSTGEN_DEBT_MDN INTEGER,
             CDR2 INTEGER,
-            CDR3 INTEGER,
-            FOREIGN KEY (UNITID) REFERENCES InstitutionInformation(UNITID)
+            CDR3 INTEGER
         );
 
         CREATE TABLE StudentOutcomes (
@@ -91,8 +89,7 @@ def create_tables_schema():
             PCT75_EARN_WNE_P6 INTEGER,
             COUNT_WNE_INC1_P6 INTEGER,
             COUNT_WNE_INC2_P6 INTEGER,
-            COUNT_WNE_INC3_P6 INTEGER,
-            FOREIGN KEY (UNITID) REFERENCES InstitutionInformation(UNITID)
+            COUNT_WNE_INC3_P6 INTEGER
         );
         """)
     # Commit the changes
@@ -100,17 +97,16 @@ def create_tables_schema():
     conn.close()
 
 
-def select_data(years):
+def select_data(year):
     conn, cur = connect_to_database()
-    scorecards = []
-    hds = []
-    for i in years:
-        scorecards.append(pd.read_sql_query(f'SELECT * from scorecard_{i-1};', conn))
-    scorecard_df = pd.concat(scorecards)
-    for y in years:
-        hds.append(pd.read_sql_query(f'SELECT * from hd_{i};', conn))
-    hd_df = pd.concat(hds)
-    merged_df = pd.merge(left=scorecard_df, right=hd_df, how='inner', on='UNITID')
+    scorecard_df = pd.read_sql_query(
+        f'SELECT * from scorecard_{year - 1};', conn)
+    hd_df = pd.read_sql_query(f'SELECT * from hd{year};', conn)
+    merged_df = pd.merge(
+        left=scorecard_df,
+        right=hd_df,
+        how='inner',
+        on='unitid')
     return merged_df
 
 
@@ -121,13 +117,66 @@ def insert_data(df, table_name):
     rejected_rows = 0
     rejected_csv = csv.writer(open(f'rejected_rows_{table_name}.csv', 'w'))
     if table_name == "InstitutionInformation":
-        df = df.loc[:, ["UNITID", "INSTNM", "LOCATION", "ADDR", "REGION", "CONTROL", "CCBASIC", "CENSUSIDS", "LATITUDE", "LONGITUDE", "ACCREDAGENCY", "PREDDEG", "HIGHDEG", "AVGFACSAL"]]
+        df = df.loc[:,
+                    ['unitid',
+                     'instnm',
+                     'location',
+                     'addr',
+                     'region',
+                     'control',
+                     'ccbasic',
+                     'censusids',
+                     'latitude',
+                     'longitude',
+                     'accredagency',
+                     'preddeg',
+                     'highdeg',
+                     'avgfacsal']]
     elif table_name == "StudentBody":
-        df = df.loc[:, ["UNITID", "SAT_AVG", "ADM_RATE", "PPTUG_EF", "UGDS_WHITE", "UGDS_BLACK", "UGDS_HISP", "UGDS_ASIAN", "UGDS_NRA", "UG", "INEXPFTE", "C150_4", "C150_L4", "TUITFTE", "TUITIONFEE_IN", "TUITIONFEE_OUT", "TUITIONFEE_PROG"]]
+        df = df.loc[:,
+                    ['unitid',
+                     'sat_avg',
+                     'adm_rate',
+                     'pptug_ef',
+                     'ugds_white',
+                     'ugds_black',
+                     'ugds_hisp',
+                     'ugds_asian',
+                     'ugds_nra',
+                     'ug',
+                     'inexpfte',
+                     'c150_4',
+                     'c150_l4',
+                     'tuitfte',
+                     'tuitionfee_in',
+                     'tuitionfee_out',
+                     'tuitionfee_prog']]
     elif table_name == "Debt":
-        df = df.loc[:, ["UNITID", "GRAD_DEBT_MDN", "WDRAW_DEBT_MDN", "LO_INC_DEBT_MDN", "MD_INC_DEBT_MDN", "HI_INC_DEBT_MDN", "DEP_DEBT_MDN", "IND_DEBT_MDN", "PELL_DEBT_MDN", "NOPELL_DEBT_MDN", "FEMALE_DEBT_MDN", "MALE_DEBT_MDN", "FIRSTGEN_DEBT_MDN", "NOTFIRSTGEN_DEBT_MDN", "CDR2", "CDR3"]]
+        df = df.loc[:,
+                    ['unitid',
+                     'grad_debt_mdn',
+                     'wdraw_debt_mdn',
+                     'lo_inc_debt_mdn',
+                     'md_inc_debt_mdn',
+                     'hi_inc_debt_mdn',
+                     'dep_debt_mdn',
+                     'ind_debt_mdn',
+                     'pell_debt_mdn',
+                     'nopell_debt_mdn',
+                     'female_debt_mdn',
+                     'male_debt_mdn',
+                     'firstgen_debt_mdn',
+                     'notfirstgen_debt_mdn',
+                     'cdr2',
+                     'cdr3']]
     else:
-        df = df.loc[:, ["UNITID", "PCT25_EARN_WNE_P6", "PCT75_EARN_WNE_P6", "COUNT_WNE_INC1_P6", "COUNT_WNE_INC2_P6", "COUNT_WNE_INC3_P6"]]
+        df = df.loc[:,
+                    ['unitid',
+                     'pct25_earn_wne_p6',
+                     'pct75_earn_wne_p6',
+                     'count_wne_inc1_p6',
+                     'count_wne_inc2_p6',
+                     'count_wne_inc3_p6']]
     with conn.transaction():
         for index, row in df.iterrows():
             try:
@@ -149,9 +198,10 @@ def insert_data(df, table_name):
     return inserted_rows, rejected_rows
 
 
-def main(years, table_name):
+def main(years, table_name, user_flag):
     """Main function to process the CSV file and update the database."""
-    create_tables_schema()
+    if user_flag:
+        create_tables_schema()
     df = select_data(years)
     conn, cur = connect_to_database()
     inserted_rows, rejected_rows = insert_data(df, table_name)
@@ -165,6 +215,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("Usage: python load-schema.py [<years>] <table_name>")
         sys.exit(1)
-    years = sys.argv[1]
+    years = int(sys.argv[1])
     table_name = sys.argv[2]
-    main(years, table_name)
+    user_flag = bool(sys.argv[3])
+    main(years, table_name, user_flag)

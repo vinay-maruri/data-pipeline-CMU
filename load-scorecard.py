@@ -26,8 +26,59 @@ def connect_to_database():
 
 
 def clean_csv(csv_file_path):
-    columns_to_select = ["UNITID", "INSTNM", "CONTROL", "ACCREDAGENCY", "ADDR", "REGION", "CCBASIC", "LATITUDE", "LONGITUDE", "PREDDEG", "HIGHDEG", "AVGFACSAL", "SAT_AVG", "ADM_RATE", "PPTUG_EF", "UGDS_WHITE", "UGDS_BLACK", "UGDS_HISP", "UGDS_ASIAN", "UGDS_NRA", "UG", "INEXPFTE", "C150_4", "C150_L4", "TUITFTE", "TUITIONFEE_IN", "TUITIONFEE_OUT", "TUITIONFEE_PROG", "GRAD_DEBT_MDN", "WDRAW_DEBT_MDN", "LO_INC_DEBT_MDN", "MD_INC_DEBT_MDN", "HI_INC_DEBT_MDN", "DEP_DEBT_MDN", "IND_DEBT_MDN", "PELL_DEBT_MDN", "NOPELL_DEBT_MDN", "FEMALE_DEBT_MDN", "MALE_DEBT_MDN", "FIRSTGEN_DEBT_MDN", "NOTFIRSTGEN_DEBT_MDN", "CDR2", "CDR3", "MD_EARN_WNE_P6", "PCT25_EARN_WNE_P6","PCT75_EARN_WNE_P6", "COUNT_WNE_INC1_P6", "COUNT_WNE_INC2_P6", "COUNT_WNE_INC3_P6"]
-    file = pd.read_csv(filepath_or_buffer=csv_file_path, usecols=columns_to_select)
+    columns_to_select = [
+        "UNITID",
+        "INSTNM",
+        "CONTROL",
+        "ACCREDAGENCY",
+        "ADDR",
+        "REGION",
+        "CCBASIC",
+        "LATITUDE",
+        "LONGITUDE",
+        "PREDDEG",
+        "HIGHDEG",
+        "AVGFACSAL",
+        "SAT_AVG",
+        "ADM_RATE",
+        "PPTUG_EF",
+        "UGDS_WHITE",
+        "UGDS_BLACK",
+        "UGDS_HISP",
+        "UGDS_ASIAN",
+        "UGDS_NRA",
+        "UG",
+        "INEXPFTE",
+        "C150_4",
+        "C150_L4",
+        "TUITFTE",
+        "TUITIONFEE_IN",
+        "TUITIONFEE_OUT",
+        "TUITIONFEE_PROG",
+        "GRAD_DEBT_MDN",
+        "WDRAW_DEBT_MDN",
+        "LO_INC_DEBT_MDN",
+        "MD_INC_DEBT_MDN",
+        "HI_INC_DEBT_MDN",
+        "DEP_DEBT_MDN",
+        "IND_DEBT_MDN",
+        "PELL_DEBT_MDN",
+        "NOPELL_DEBT_MDN",
+        "FEMALE_DEBT_MDN",
+        "MALE_DEBT_MDN",
+        "FIRSTGEN_DEBT_MDN",
+        "NOTFIRSTGEN_DEBT_MDN",
+        "CDR2",
+        "CDR3",
+        "MD_EARN_WNE_P6",
+        "PCT25_EARN_WNE_P6",
+        "PCT75_EARN_WNE_P6",
+        "COUNT_WNE_INC1_P6",
+        "COUNT_WNE_INC2_P6",
+        "COUNT_WNE_INC3_P6"]
+    file = pd.read_csv(
+        filepath_or_buffer=csv_file_path,
+        usecols=columns_to_select)
     if object_dtypes := {
         c: dtype for c in file.columns if (
             dtype := pd.api.types.infer_dtype(
@@ -57,7 +108,7 @@ def clean_csv(csv_file_path):
     numeric_cols = file.select_dtypes(include=['int64', 'float64']).columns
     file[numeric_cols] = file[numeric_cols].replace(
         np.nan, 999, regex=True)
-    
+
     return file
 
 
@@ -86,7 +137,7 @@ def get_column_types(df):
 def create_tables(df, year):
     conn, cur = connect_to_database()
     # Split the dataframe into three dataframes
-    yr = year 
+    yr = year
     int_cols, float_cols, _ = get_column_types(df)
     columns = []
     for col in df.columns:
@@ -122,11 +173,11 @@ def insert_rows(df, year):
                     query1 = f'INSERT INTO scorecard_{year} VALUES {row};'
                     cur.execute(query1)
             except Exception as e:
-                #print("row rejected")
+                # print("row rejected")
                 rejected_csv.writerow([str(e), row])
                 num_rows_rejected += 1
             else:
-                #print("row inserted")
+                # print("row inserted")
                 num_rows_inserted += 1
     # now we commit the entire transaction
     conn.commit()
@@ -145,4 +196,4 @@ cleaned = clean_csv(filename)
 # pick out the columns that we need.
 if new_tables:
     create_tables(cleaned, year)
-insert_rows(cleaned, year) 
+insert_rows(cleaned, year)

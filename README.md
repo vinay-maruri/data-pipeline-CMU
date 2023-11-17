@@ -1,8 +1,11 @@
 # data-pipeline-CMU
 
 There are 3 code files in this repository:
+
 1] load-scorecard.py: This code file takes in raw college scorecard data and loads it into a postgres RDBMS
+
 2] load_ipeds.py: This code file takes in raw IPEDS data and loads it into a postgres RDBMS
+
 3] load-schema.py: This code file uses the loaded scorecard and IPEDS data to build user-requested tables within our prepared data table schema of InstitutionInformation, Debt, StudentBody, and StudentOutcomes. 
 
 

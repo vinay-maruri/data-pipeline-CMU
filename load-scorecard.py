@@ -34,9 +34,7 @@ def clean_csv(csv_file_path):
             file[c])).startswith("mixed")}:
         raise TypeError(
             f"Dataframe has one more object dtypes: {object_dtypes}")
-    # file = file.loc[:, columns_to_select]
     # Extract year from csv_file_path
-    print(file.head())
     year1 = csv_file_path.split('_')[0].replace('MERGED', '')
     year2 = str(int(year1) + 1)
 

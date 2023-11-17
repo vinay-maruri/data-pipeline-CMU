@@ -1,8 +1,8 @@
-
-
 import pandas as pd
 import psycopg
 import credentials
+import csv
+import sys
 
 
 def connect_to_database():
@@ -14,20 +14,17 @@ def connect_to_database():
     """
     conn = psycopg.connect(
         host="pinniped.postgres.database.azure.com",
-        dbname="shauck",
+        dbname="vmaruri",
         user=credentials.DB_USER,
         password=credentials.DB_PASSWORD
     )
-
     cur = conn.cursor()
-
     return conn, cur
 
 
 def create_tables_schema():
     # Connect to the database
     conn, cur = connect_to_database()
-
     # Create the tables
     cur.execute("""
         CREATE TABLE InstitutionInformation (
@@ -40,7 +37,7 @@ def create_tables_schema():
             CCBASIC INTEGER,
             CENSUSIDS INTEGER,
             LATITUDE INTEGER,
-            LONGITUD INTEGER,
+            LONGITUDE INTEGER,
             ACCREDAGENCY TEXT,
             PREDDEG INTEGER,
             HIGHDEG INTEGER,
@@ -62,9 +59,9 @@ def create_tables_schema():
             C150_4 INTEGER,
             C150_L4 INTEGER,
             TUITFTE INTEGER,
-            TUTIONFEE_IN INTEGER,
-            TUTIONFEE_OUT INTEGER,
-            TUTIONFEE_PROG INTEGER,
+            TUITIONFEE_IN INTEGER,
+            TUITIONFEE_OUT INTEGER,
+            TUITIONFEE_PROG INTEGER,
             FOREIGN KEY (UNITID) REFERENCES InstitutionInformation(UNITID)
         );
 
@@ -90,7 +87,6 @@ def create_tables_schema():
 
         CREATE TABLE StudentOutcomes (
             UNITID INTEGER PRIMARY KEY,
-            MD_EARN_WNE_6 INTEGER,
             PCT25_EARN_WNE_P6 INTEGER,
             PCT75_EARN_WNE_P6 INTEGER,
             COUNT_WNE_INC1_P6 INTEGER,
@@ -99,53 +95,76 @@ def create_tables_schema():
             FOREIGN KEY (UNITID) REFERENCES InstitutionInformation(UNITID)
         );
         """)
-    
     # Commit the changes
     conn.commit()
     conn.close()
 
 
-def create_table_scorecard(scorecard_df):
+def select_data(years):
     conn, cur = connect_to_database()
-    int_cols, float_cols, _ = get_column_types(scorecard_df)
-    columns = []
-    for col in scorecard_df.columns:
-        if str(col) in int_cols:
-            # print(f"this is an int col: {col}")
-            columns.append(f'{col} INTEGER')
-        elif str(col) in float_cols:
-            # print(f"this is a float col: {col}")
-            columns.append(f'{col} FLOAT')
-        else:
-            # print(f"this is a text col: {col}")
-            columns.append(f'{col} VARCHAR(255)')
-    print(len(columns))
-    column_str_1 = ', '.join(columns)
-    print(column_str_1)
-    cur.execute(f'CREATE TABLE scorecard_full ({column_str_1});')
+    scorecards = []
+    hds = []
+    for i in years:
+        scorecards.append(pd.read_sql_query(f'SELECT * from scorecard_{i};', conn))
+    scorecard_df = pd.concat(scorecards)
+    for y in years:
+        hds.append(pd.read_sql_query(f'SELECT * from hds_{i};', conn))
+    hd_df = pd.concat(hds)
+    merged_df = pd.merge(left=scorecard_df, right=hd_df, how='inner', on='UNITID')
+    return merged_df
+
+
+def insert_data(df, table_name):
+    """Insert data into the table and handle invalid rows."""
+    conn, cur = connect_to_database()
+    inserted_rows = 0
+    rejected_rows = 0
+    rejected_csv = csv.writer(open(f'rejected_rows_{table_name}.csv', 'w'))
+    if table_name == "InstitutionInformation":
+        df = df.loc[:, ["UNITID", "INSTNM", "LOCATION", "ADDR", "REGION", "CONTROL", "CCBASIC", "CENSUSIDS", "LATITUDE", "LONGITUDE", "ACCREDAGENCY", "PREDDEG", "HIGHDEG", "AVGFACSAL"]]
+    elif table_name == "StudentBody":
+        df = df.loc[:, ["UNITID", "SAT_AVG", "ADM_RATE", "PPTUG_EF", "UGDS_WHITE", "UGDS_BLACK", "UGDS_HISP", "UGDS_ASIAN", "UGDS_NRA", "UG", "INEXPFTE", "C150_4", "C150_L4", "TUITFTE", "TUITIONFEE_IN", "TUITIONFEE_OUT", "TUITIONFEE_PROG"]]
+    elif table_name == "Debt":
+        df = df.loc[:, ["UNITID", "GRAD_DEBT_MDN", "WDRAW_DEBT_MDN", "LO_INC_DEBT_MDN", "MD_INC_DEBT_MDN", "HI_INC_DEBT_MDN", "DEP_DEBT_MDN", "IND_DEBT_MDN", "PELL_DEBT_MDN", "NOPELL_DEBT_MDN", "FEMALE_DEBT_MDN", "MALE_DEBT_MDN", "FIRSTGEN_DEBT_MDN", "NOTFIRSTGEN_DEBT_MDN", "CDR2", "CDR3"]]
+    else:
+        df = df.loc[:, ["UNITID", "PCT25_EARN_WNE_P6", "PCT75_EARN_WNE_P6", "COUNT_WNE_INC1_P6", "COUNT_WNE_INC2_P6", "COUNT_WNE_INC3_P6"]]
+    with conn.transaction():
+        for index, row in df.iterrows():
+            try:
+                placeholders = ', '.join(['%s'] * len(row))
+                columns = ', '.join(row.index)
+                sql = (
+                    f"INSERT INTO {table_name} "
+                    f"({columns}) "
+                    f"VALUES ({placeholders})"
+                )
+                cur.execute(sql, list(row.values))
+            except Exception as e:
+                rejected_csv.writerow([str(e), row])
+                print(f"Error: {e}")
+                rejected_rows += 1
+            else:
+                inserted_rows += 1
     conn.commit()
+    return inserted_rows, rejected_rows
+
+
+def main(years, table_name):
+    """Main function to process the CSV file and update the database."""
+    create_tables_schema()
+    df = select_data(years)
+    conn, cur = connect_to_database()
+    inserted_rows, rejected_rows = insert_data(df, table_name)
     conn.close()
 
-
-def get_column_types(df):
-    """
-    Get a list of all int64 columns, a list of all float64 columns, and a list of all object columns.
-
-    Args:
-        df: The pandas dataframe.
-
-    Returns:
-        A tuple containing three lists: a list of all int64 columns, a list of all float64 columns, and a list of all object columns.
-    """
-    # List of int64 columns
-    int_cols = df.select_dtypes(include='int64').columns.tolist()
-
-    # List of float64 columns
-    float_cols = df.select_dtypes(include='float64').columns.tolist()
-
-    # List of object columns
-    object_cols = df.select_dtypes(include='object').columns.tolist()
-
-    return int_cols, float_cols, object_cols
+    print(f"Total rows from CSV: {len(df)}")
+    print(f"Inserted: {inserted_rows}, Rejected: {rejected_rows}")
 
 
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print("Usage: python load-schema.py [<years>] <table_name>")
+        sys.exit(1)
+    years = sys.argv[1]
+    table_name = sys.argv[2]
+    main(years, table_name)

@@ -7,14 +7,17 @@ Instructions to run:
 
 - To load the college scorecard data:
 - - 1 argument to pass
+
 python load-scorecard.py raw scorecard file name
 
 - To load the IPEDS data:
 -- 1 argument to pass
+  
 python load-scorecard.py raw IPEDS file name
 
 - To load the final tables (defined by our schema):
   --2 arguments to pass
+  
 python load-schema.py [year range of analysis/data files] final table name to generate from InstitutionInformation, Debt, StudentBody, StudentOutcomes
 
 

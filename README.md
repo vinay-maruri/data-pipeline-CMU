@@ -16,9 +16,9 @@ python load-scorecard.py raw scorecard file name
 python load-scorecard.py raw IPEDS file name
 
 - To load the final tables (defined by our schema):
-  --2 arguments to pass
+  --3 arguments to pass
   
-python load-schema.py [year range of analysis] final table name to generate from InstitutionInformation, Debt, StudentBody, StudentOutcomes
+python load-schema.py year final table name to generate from InstitutionInformation, Debt, StudentBody, StudentOutcomes flag_to_generate_tables
 
 
 

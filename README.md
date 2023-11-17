@@ -10,15 +10,23 @@ Instructions to run:
 
 python load-scorecard.py raw scorecard file name
 
+example: python load-scorecard.py MERGED2018_19_PP.csv
+
 - To load the IPEDS data:
 -- 1 argument to pass
   
 python load-scorecard.py raw IPEDS file name
 
+example: python load-scorecard.py hd2019.csv
+
 - To load the final tables (defined by our schema):
-  --2 arguments to pass
+  --3 arguments to pass
   
-python load-schema.py [year range of analysis] final table name to generate from InstitutionInformation, Debt, StudentBody, StudentOutcomes
+python load-schema.py year final table name to generate from InstitutionInformation, Debt, StudentBody, StudentOutcomes flag_to_generate_tables
+
+example: python load-schema.py 2019 Debt True
+
+valid years: 2019, 2020, 2021, 2022
 
 
 

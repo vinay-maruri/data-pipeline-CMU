@@ -20,6 +20,8 @@ python load-scorecard.py raw IPEDS file name
   
 python load-schema.py year final table name to generate from InstitutionInformation, Debt, StudentBody, StudentOutcomes flag_to_generate_tables
 
+valid years: 2019, 2020, 2021, 2022
+
 
 
 timecards sheet: https://docs.google.com/spreadsheets/d/1rTJWASwnHNq7ZSrI6INrh1z1rssZ8Vs91-evc56JbSQ/edit?usp=sharing

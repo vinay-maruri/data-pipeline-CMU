@@ -11,7 +11,8 @@ There are 3 code files in this repository:
 
 Instructions to run: 
 
-- Create a database connection using the server account credentials provided to you. You will need to create a separate credentials.py file and store your username/password there. You will also have to make sure that youre connected to a DB that you can access. 
+- Create a database connection using the server account credentials provided to you. You will need to create a separate credentials.py file and store your username/password there. You will also have to make sure that youre connected to a DB that you can access.
+- Run load-scorecard and/or load-ipeds before load-schema. 
 
 - To load the college scorecard data:
 - - 1 argument to pass

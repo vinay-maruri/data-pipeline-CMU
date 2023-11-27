@@ -14,7 +14,7 @@ def connect_to_database():
     """
     conn = psycopg.connect(
         host="pinniped.postgres.database.azure.com",
-        dbname="vmaruri",
+        dbname=credentials.DB_NAME,
         user=credentials.DB_USER,
         password=credentials.DB_PASSWORD
     )

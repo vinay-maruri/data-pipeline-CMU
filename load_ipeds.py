@@ -49,16 +49,31 @@ def create_table(df, table_name, conn, cur):
     conn.commit()
 
 
+def is_invalid_data(row, numeric_columns):
+    for col in numeric_columns:
+        if isinstance(row[col], str) and re.search(r'[a-zA-Z]', row[col]):
+            return True
+    return False
+ 
+
 def insert_data(df, table_name, conn, cur):
     total_rows = len(df)
     inserted_rows = 0
     failed_rows = 0
     failed_data = []
 
+    numeric_columns = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
+
     # Replacing pandas NA values with None for SQL compatibility
     df = df.replace({pd.NA: None})
     try:
         for index, row in df.iterrows():
+            if is_invalid_data(row, numeric_columns):
+                failed_rows += 1
+                failed_data.append(row)
+                continue
+
+            # prepare for SQL
             placeholders = ', '.join(['%s'] * len(row))
             columns = ', '.join(row.index)
             sql = (
@@ -96,8 +111,15 @@ if __name__ == "__main__":
     filename = sys.argv[1]
     df, year = read_csv(filename)
     table_name = f'ipeds_{year}'
-    conn, cur = connect_to_database()
+
+    try:
+        conn, cur = connect_to_database()
+    except Exception as e:
+        print(f"Error connecting to database: {e}")
+        sys.exit(1)
+
     create_table(df, table_name, conn, cur)
+    
     total_rows, inserted_rows, failed_rows = insert_data(df, table_name, conn, cur)
     print(f"Total rows read from CSV: {total_rows}")
     print(f"Total rows successfully inserted: {inserted_rows}")

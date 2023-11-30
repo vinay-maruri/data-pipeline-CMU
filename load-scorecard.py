@@ -90,7 +90,15 @@ def clean_csv(csv_file_path):
         'ADMCON7']
     file = pd.read_csv(
         filepath_or_buffer=csv_file_path,
-        usecols=columns_to_select)
+        usecols=columns_to_select,
+        dtype={'DBRR1_FED_UG_N': object, 
+        'DBRR1_FED_UG_RT': object, 
+        'DBRR5_FED_UG_N': object, 
+        'DBRR5_FED_UG_RT': object,               
+        'DBRR10_FED_UG_N': object, 
+        'DBRR10_FED_UG_RT': object, 
+        'DBRR20_FED_UG_N': object, 
+        'DBRR20_FED_UG_RT': object})
     if object_dtypes := {
         c: dtype for c in file.columns if (
             dtype := pd.api.types.infer_dtype(

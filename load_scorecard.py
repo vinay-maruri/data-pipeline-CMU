@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
     filename = sys.argv[1]
     df, year = read_csv(filename)
-    table_name = f'scorecard_{year}'  # 根据年份构造表名
+    table_name = f'scorecard_{year}'
     conn, cur = connect_to_database()
     create_table(df, table_name, conn, cur)
     total_rows, inserted_rows, failed_rows = insert_data(df, table_name, conn, cur)

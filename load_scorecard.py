@@ -26,10 +26,10 @@ def read_csv(filename):
     # Selecting specific variables from the dataframe
     columns_to_keep = ['REGION', 'ACCREDAGENCY', 'PREDDEG', 'HIGHDEG', 'AVGFACSAL', 'SAT_AVG', 
                        'ADM_RATE', 'PPTUG_EF', 'UGDS_WHITE', 'UGDS_BLACK', 'UGDS_HISP', 'UGDS_ASIAN', 'UGDS_NRA', 'UG', 
-                       'INEXPFTE', 'C150_4', 'C150_L4', 'TUITFTE',
+                       'INEXPFTE', 'C150_4', 'C150_L4', 'TUITFTE', 'TUITIONFEE_IN', 'TUITIONFEE_OUT', 'TUITIONFEE_PROG',
                        'GRAD_DEBT_MDN', 'WDRAW_DEBT_MDN', 'LO_INC_DEBT_MDN', 'MD_INC_DEBT_MDN', 'HI_INC_DEBT_MDN', 
                        'DEP_DEBT_MDN', 'IND_DEBT_MDN', 'PELL_DEBT_MDN', 'NOPELL_DEBT_MDN', 'FEMALE_DEBT_MDN', 
-                       'MALE_DEBT_MDN', 'FIRSTGEN_DEBT_MDN', 'NOTFIRSTGEN_DEBT_MDN', 'CDR2', 'CDR3', 
+                       'MALE_DEBT_MDN', 'FIRSTGEN_DEBT_MDN', 'NOTFIRSTGEN_DEBT_MDN', 'CDR2', 'CDR3', 'MD_EARN_WNE_P6',
                        'PCT25_EARN_WNE_P6', 'PCT75_EARN_WNE_P6', 'COUNT_WNE_INC1_P6', 'COUNT_WNE_INC2_P6', 'COUNT_WNE_INC3_P6']
 
     df = pd.read_csv(filename, encoding='ISO-8859-1', na_values=['', -999])
@@ -129,3 +129,4 @@ if __name__ == "__main__":
 
     cur.close()
     conn.close()
+

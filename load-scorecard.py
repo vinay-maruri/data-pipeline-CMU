@@ -75,7 +75,19 @@ def clean_csv(csv_file_path):
         "PCT75_EARN_WNE_P6",
         "COUNT_WNE_INC1_P6",
         "COUNT_WNE_INC2_P6",
-        "COUNT_WNE_INC3_P6"]
+        "COUNT_WNE_INC3_P6",
+        'DBRR1_FED_UG_N', 
+        'DBRR1_FED_UG_RT', 
+        'DBRR4_FED_UG_N', 
+        'DBRR4_FED_UG_RT', 
+        'DBRR5_FED_UG_N', 
+        'DBRR5_FED_UG_RT',               
+        'DBRR10_FED_UG_N', 
+        'DBRR10_FED_UG_RT', 
+        'DBRR20_FED_UG_N', 
+        'DBRR20_FED_UG_RT', 
+        'OPENADMP', 
+        'ADMCON7']
     file = pd.read_csv(
         filepath_or_buffer=csv_file_path,
         usecols=columns_to_select)

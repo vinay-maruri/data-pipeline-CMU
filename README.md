@@ -17,9 +17,11 @@ Instructions to run:
 - To load the college scorecard data:
 - - 1 argument to pass
 
-python load-scorecard.py raw scorecard file name
+python load_scorecard.py raw scorecard file name
 
-example: python load-scorecard.py MERGED2018_19_PP.csv
+example: python load_scorecard.py MERGED2018_19_PP.csv
+
+It will show a warning message: DtypeWarning: Columns (1729,1909,1910,1911,1912,1913,2376,2377,2958) have mixed types. But we are not interested in these columns, just ignore it. For columns we are interested in, if they have mixed data types, the row that has the problem will be rejected.
 
 - To load the IPEDS data:
 -- 1 argument to pass

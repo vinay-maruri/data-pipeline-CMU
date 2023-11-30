@@ -46,8 +46,6 @@ def create_tables_schema():
 
         CREATE TABLE StudentBody (
             UNITID INTEGER PRIMARY KEY,
-            SAT_AVG INTEGER,
-            ADM_RATE FLOAT,
             PPTUG_EF FLOAT,
             UGDS_WHITE FLOAT,
             UGDS_BLACK FLOAT,
@@ -90,6 +88,26 @@ def create_tables_schema():
             COUNT_WNE_INC1_P6 INTEGER,
             COUNT_WNE_INC2_P6 INTEGER,
             COUNT_WNE_INC3_P6 INTEGER
+        );
+        CREATE TABLE LoanRepayments(
+            UNITID INTEGER PRIMARY KEY,
+            DBRR1_FED_UG_N INTEGER,
+            DBRR1_FED_UG_RT FLOAT,
+            DBRR4_FED_UG_N INTEGER,
+            DBRR4_FED_UG_RT FLOAT,
+            DBRR5_FED_UG_N INTEGER,
+            DBRR5_FED_UG_RT FLOAT,
+            DBRR10_FED_UG_N INTEGER,
+            DBRR10_FED_UG_RT FLOAT,
+            DBRR20_FED_UG_N INTEGER,
+            DBRR20_FED_UG_RT FLOAT
+        );
+        CREATE TABLE Admissions(
+            UNITID INTEGER PRIMARY KEY,
+            SAT_AVG INTEGER,
+            ADM_RATE FLOAT,
+            OPENADMP INTEGER,
+            ADMCON7 INTEGER
         );
         """)
     # Commit the changes
@@ -169,6 +187,26 @@ def insert_data(df, table_name):
                      'notfirstgen_debt_mdn',
                      'cdr2',
                      'cdr3']]
+    elif table_name == "LoanRepayments":
+        df = df.loc[:,
+                    ['unitid',
+                     'dbrr1_fed_ug_n',
+                     'dbrr1_fed_ug_rt',
+                     'dbrr4_fed_ug_n',
+                     'dbrr4_fed_ug_rt',
+                     'dbrr5_fed_ug_n',
+                     'dbrr5_fed_ug_rt',
+                     'dbrr10_fed_ug_n',
+                     'dbrr10_fed_ug_rt',
+                     'dbrr20_fed_ug_n',
+                     'dbrr20_fed_ug_rt']]
+    elif table_name == "Admissions":
+        df = df.loc[:,
+                    ['unitid',
+                     'sat_avg',
+                     'adm_rate',
+                     'openadmp',
+                     'admcon7']]
     else:
         df = df.loc[:,
                     ['unitid',
@@ -200,7 +238,8 @@ def insert_data(df, table_name):
 
 def main(years, table_name, user_flag):
     """Main function to process the CSV file and update the database."""
-    if user_flag:
+    if user_flag == "True":
+        print("entered this area")
         create_tables_schema()
     df = select_data(years)
     conn, cur = connect_to_database()
@@ -216,6 +255,9 @@ if __name__ == '__main__':
         print("Usage: python load-schema.py [<years>] <table_name>")
         sys.exit(1)
     years = int(sys.argv[1])
+    print(years)
     table_name = sys.argv[2]
-    user_flag = bool(sys.argv[3])
+    print(table_name)
+    user_flag = sys.argv[3]
+    print(user_flag)
     main(years, table_name, user_flag)

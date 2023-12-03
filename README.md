@@ -17,9 +17,9 @@ Instructions to run:
 - To load the college scorecard data:
 - - 1 argument to pass
 
-python load_scorecard.py raw scorecard file name
+python load-scorecard.py raw scorecard file name
 
-example: python load_scorecard.py MERGED2018_19_PP.csv
+example: python load-scorecard.py MERGED2018_19_PP.csv
 
 - To load the IPEDS data:
 -- 1 argument to pass
@@ -37,9 +37,3 @@ one year example: python load-schema.py 2019 True
 all years example: python load-schema.py 2019 True; python load-schema.py 2020 False; python load-schema.py 2021 False; python load-schema.py 2022 False
 
 valid years: 2019, 2020, 2021, 2022
-
-
-
-timecards sheet: https://docs.google.com/spreadsheets/d/1rTJWASwnHNq7ZSrI6INrh1z1rssZ8Vs91-evc56JbSQ/edit?usp=sharing
-
-project notes master document: https://docs.google.com/document/d/122vHfMRxXLKWhUTRgul8CLrdzfFJjwUiFIX7puxCojM/edit?usp=sharing

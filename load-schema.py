@@ -241,22 +241,24 @@ def insert_data(df, year):
                              'count_wne_inc2_p6',
                              'count_wne_inc3_p6']]
         with conn.transaction():
-            for index, row in tmp_df.iterrows():
-                try:
-                    placeholders = ', '.join(['%s'] * len(row))
-                    columns = ', '.join(row.index)
-                    sql = (
-                        f"INSERT INTO {table_name} "
-                        f"({columns}) "
-                        f"VALUES ({placeholders})"
-                    )
-                    cur.execute(sql, list(row.values))
-                except Exception as e:
-                    rejected_csv.writerow([str(e), row])
-                    # print(f"Error: {e}")
-                    rejected_rows += 1
-                else:
-                    inserted_rows += 1
+            rowbank = []
+            for _, row in tmp_df.iterrows():
+                rowbank.append(tuple(row.values))
+            try:
+                placeholders = ', '.join(['%s'] * len(row))
+                columns = ', '.join(row.index)
+                sql = (
+                    f"INSERT INTO {table_name} "
+                    f"({columns}) "
+                    f"VALUES ({placeholders})"
+                )
+                cur.executemany(sql, rowbank)
+            except Exception as e:
+                rejected_csv.writerow([str(e), row])
+                print(f"Error: {e}")
+                rejected_rows += len(rowbank)
+            else:
+                inserted_rows += len(rowbank)
         conn.commit()
         print("transaction committed")
     print("transaction closing")
@@ -278,7 +280,7 @@ def main(years, user_flag):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 0:
         print("Usage: python load-schema.py [<years>] <user_flag>")
         sys.exit(1)
     years = int(sys.argv[1])

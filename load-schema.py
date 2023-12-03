@@ -129,7 +129,7 @@ def select_data(year):
     conn, cur = connect_to_database()
     scorecard_df = pd.read_sql_query(
         f'SELECT * from scorecard_{year - 1};', conn)
-    hd_df = pd.read_sql_query(f'SELECT * from hd{year};', conn)
+    hd_df = pd.read_sql_query(f'SELECT * from ipeds_{year};', conn)
     merged_df = pd.merge(
         left=scorecard_df,
         right=hd_df,

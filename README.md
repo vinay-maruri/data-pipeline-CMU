@@ -29,11 +29,12 @@ python load_ipeds.py raw IPEDS file name
 example: python load_ipeds.py hd2019.csv
 
 - To load the final tables (defined by our schema):
-  --3 arguments to pass
+  --2 arguments to pass: The year that you want data for, and whether to rebuild the tables from scratch (true/false). Unless there is a data corruption problem, you should only need to build the table once, and then append additional years of data onto it.  
   
-python load-schema.py year final table name to generate from InstitutionInformation, Debt, StudentBody, StudentOutcomes flag_to_generate_tables
+python load-schema.py year flag_to_generate_tables
 
-example: python load-schema.py 2019 Debt True
+one year example: python load-schema.py 2019 True
+all years example: python load-schema.py 2019 True; python load-schema.py 2020 False; python load-schema.py 2021 False; python load-schema.py 2022 False
 
 valid years: 2019, 2020, 2021, 2022
 

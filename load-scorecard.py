@@ -113,12 +113,12 @@ def clean_csv(csv_file_path):
     file['year1'] = year1
     file['year2'] = year2
 
-    # replace privacy suppressed values with NaN in numeric columns
+    # replace privacy suppressed values with 999 in numeric columns
     numeric_cols = file.select_dtypes(include=['int64', 'float64']).columns
     file[numeric_cols] = file[numeric_cols].replace(
         'PrivacySuppressed', 999, regex=True)
 
-    # replace privacy suppressed values with NaN in object columns
+    # replace privacy suppressed values with 999 in object columns
     object_cols = file.select_dtypes(include=['object']).columns
     file[object_cols] = file[object_cols].replace(
         'PrivacySuppressed', "999", regex=True)

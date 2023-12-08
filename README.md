@@ -1,5 +1,16 @@
 # data-pipeline-CMU
 
+Short Instructions for TA or Professor Reinhart:
+
+To run the pipeline (for all of the current data files):
+- clone this repository
+- create a credentials.py file and define DB_NAME, DB_USER, and DB_PASSWORD in that file as strings (these are for your azure server account)
+- run this command (assuming that your data files are unpacked from the gz files): python load-scorecard.py MERGED2018_19_PP.csv; python load-scorecard.py MERGED2019_20_PP.csv; python load-scorecard.py MERGED2020_21_PP.csv; python load-scorecard.py MERGED2021_22_PP.csv; python load_ipeds.py hd2019.csv; python load_ipeds.py hd2020.csv;  python load_ipeds.py hd2021.csv; python load_ipeds.py hd2022.csv; python load-schema.py 2019 True; python load-schema.py 2020 False; python load-schema.py 2021 False; python load-schema.py 2022 False
+- install papermill (for the reports): pip install papermill
+- To generate the reports (for years 2019-2021), run this command: jupyter nbconvert --to script "Reporting Notebook.ipynb"; papermill "Reporting Notebook.ipynb" "Report<year>.ipynb" -p year <year>; jupyter nbconvert --no-input --to html Report<year>.ipynb
+- be prepared for a runtime of ~30 minutes. We are making 6 tables, inserting in data 120,000 times.
+
+
 There are 3 code files in this repository:
 
 1] load-scorecard.py: This code file takes in raw college scorecard data and loads it into a postgres RDBMS

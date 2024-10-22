@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 credentials.py
 hd2019.csv
 MERGED2018_19_PP.csv
 __pycache__/credentials.cpython-311.pyc
 MERGED2019_20_PP.csv
+=======
+.DS_Store
+>>>>>>> e27e128 (banish DS store)
